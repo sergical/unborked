@@ -11,11 +11,18 @@ function Home() {
   const [error, setError] = useState<string | null>(null);
   const { flags } = useFeatureFlags();
 
+  const processProductData = (data: Product[]): Product[] => {
+    // Process/transform product data if needed
+    // For now, just return the data as-is
+    return data;
+  };
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
       const data = await productService.getProducts();
-      setProducts(data);
+      const processedData = processProductData(data);
+      setProducts(processedData);
       setError(null);
     } catch (err) {
       setError('Failed to load products. Please try again.');
