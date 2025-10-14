@@ -8,7 +8,7 @@ const router = express.Router();
 
 const { debug, info, warn, error, fmt } = Sentry.logger;
 
-// Poorly designed endpoint - this looks innocent but will cause N+1 queries
+// Optimized endpoint - uses a single query with JOINs instead of N+1 queries
 router.get('/', async (_req: Request, res: Response) => {
   return await Sentry.startSpan(
     {
@@ -22,79 +22,79 @@ router.get('/', async (_req: Request, res: Response) => {
     async (span) => {
       info('Fetching sale products');
       try {
-        // Step 1: Get all products (looks reasonable)
-        debug('Fetching all products');
-        const allProducts = await db.select().from(products);
+        // Optimized: Single query with JOINs to fetch all related data at once
+        debug('Fetching sale products with optimized query');
 
-        span.setAttribute('products.total', allProducts.length);
-
-        // Step 2: For EACH product, query sale prices individually (N+1 problem!)
         const saleProducts: any[] = [];
 
-        debug(fmt`Checking sale prices for ${allProducts.length} products`);
-
-        // Load sale data for each product
+        // Load sale data with a single optimized query using JOINs
         await Sentry.startSpan(
           {
             op: 'db.query',
             name: 'Load Sale Data',
-            attributes: {
-              'products.count': allProducts.length
-            }
+            attributes: {}
           },
           async (saleDataSpan) => {
-            for (const product of allProducts) {
-              // Individual query per product - this is the killer
-              const salePrice = await db
-                .select()
-                .from(salePrices)
-                .where(eq(salePrices.productId, product.id))
-                .limit(1);
+            // Single query with LEFT JOINs to get all data at once
+            const results = await db
+              .select({
+                // Product fields
+                id: products.id,
+                name: products.name,
+                description: products.description,
+                price: products.price,
+                image: products.image,
+                category: products.category,
+                createdAt: products.createdAt,
+                updatedAt: products.updatedAt,
+                // Sale price fields
+                salePrice: salePrices.salePrice,
+                // Metadata fields
+                discount: productMetadata.discount,
+                saleCategory: productMetadata.saleCategory,
+                featured: productMetadata.featured,
+                priority: productMetadata.priority,
+                // Category description
+                categoryDescription: saleCategories.description
+              })
+              .from(products)
+              .leftJoin(salePrices, eq(products.id, salePrices.productId))
+              .leftJoin(productMetadata, eq(products.id, productMetadata.productId))
+              .leftJoin(saleCategories, eq(productMetadata.saleCategory, saleCategories.name))
+              .where(sql`${salePrices.salePrice} IS NOT NULL`);
 
-              if (salePrice.length > 0) {
-                // Another individual query for metadata (double N+1!)
-                const metadata = await db
-                  .select()
-                  .from(productMetadata)
-                  .where(eq(productMetadata.productId, product.id))
-                  .limit(1);
+            span.setAttribute('products.total', results.length);
 
-                // Yet another query to match category by string (triple whammy!)
-                let categoryInfo = null;
-                if (metadata.length > 0 && metadata[0].saleCategory) {
-                  const categoryResult = await db
-                    .select()
-                    .from(saleCategories)
-                    .where(eq(saleCategories.name, metadata[0].saleCategory))
-                    .limit(1);
-
-                  if (categoryResult.length > 0) {
-                    categoryInfo = categoryResult[0];
-                  }
-                }
-
-                saleProducts.push({
-                  ...product,
-                  originalPrice: product.price,
-                  salePrice: salePrice[0].salePrice,
-                  discount: metadata.length > 0 ? metadata[0].discount : null,
-                  saleCategory: metadata.length > 0 ? metadata[0].saleCategory : null,
-                  featured: metadata.length > 0 ? metadata[0].featured : false,
-                  priority: metadata.length > 0 ? metadata[0].priority : 0,
-                  categoryDescription: categoryInfo ? categoryInfo.description : null
-                });
-              }
+            // Transform the results to match the expected format
+            for (const row of results) {
+              saleProducts.push({
+                id: row.id,
+                name: row.name,
+                description: row.description,
+                price: row.price,
+                image: row.image,
+                category: row.category,
+                createdAt: row.createdAt,
+                updatedAt: row.updatedAt,
+                originalPrice: row.price,
+                salePrice: row.salePrice,
+                discount: row.discount,
+                saleCategory: row.saleCategory,
+                featured: row.featured ?? false,
+                priority: row.priority ?? 0,
+                categoryDescription: row.categoryDescription
+              });
             }
 
-            saleDataSpan.setAttribute('queries.executed', allProducts.length * 3);
+            saleDataSpan.setAttribute('queries.executed', 1);
           }
         );
 
-        // Sort by priority (no index on priority field, so this is slow)
+        // Sort by priority
         saleProducts.sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
         span.setAttribute('products.on_sale', saleProducts.length);
-        info(fmt`Successfully fetched ${saleProducts.length} sale products after ${allProducts.length * 3} queries`);
+        info(fmt`Successfully fetched ${saleProducts.length} sale products with 1 optimized query`);
 
         res.json(saleProducts);
         return saleProducts;
