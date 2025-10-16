@@ -5,9 +5,10 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "node dist/index.js",
-    "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node -r dotenv/config' src/index.ts",
     "build": "tsc && npm run sentry:sourcemaps",
     "check-types": "tsc --noEmit",
+    "db:new": "npx neondb -y",
     "db:generate": "drizzle-kit generate",
     "studio": "drizzle-kit studio",
     "seed": "ts-node src/db/seed.ts",

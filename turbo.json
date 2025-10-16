@@ -1,16 +1,40 @@
 {
   "$schema": "https://turborepo.com/schema.json",
+  "globalEnv": ["NODE_ENV"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": [
+        "DATABASE_URL",
+        "JWT_SECRET",
+        "SENTRY_DSN",
+        "SENTRY_WEBHOOK_URL",
+        "FEATURE_FLAG_WEBHOOK_SECRET",
+        "PAYMENT_VAULT_API_KEY",
+        "PAYMENT_GATEWAY_TEST_KEY",
+        "FRONTEND_URL",
+        "VITE_*"
+      ],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"]
     },
     "check-types": {
       "dependsOn": ["^check-types"]
     },
     "dev": {
       "persistent": true,
-      "cache": false
+      "cache": false,
+      "env": [
+        "DATABASE_URL",
+        "JWT_SECRET",
+        "SENTRY_DSN",
+        "SENTRY_WEBHOOK_URL",
+        "FEATURE_FLAG_WEBHOOK_SECRET",
+        "PAYMENT_VAULT_API_KEY",
+        "PAYMENT_GATEWAY_TEST_KEY",
+        "FRONTEND_URL",
+        "VITE_*"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]
@@ -22,6 +46,9 @@
       "cache": false
     },
     "traffic": {
+      "cache": false
+    },
+    "db:new": {
       "cache": false
     },
     "db:generate": {

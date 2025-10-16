@@ -5,8 +5,8 @@ import * as Sentry from "@sentry/react";
 import { fetchServerDefaults, setFeatureFlag, getCurrentFlagMap } from './utils/featureFlags';
 
 Sentry.init({
-  dsn: "https://05ebf432cec17c157c6a9ff25d37c1fc@o4505994951065600.ingest.us.sentry.io/4510127399501824",
-  
+  dsn: import.meta.env.VITE_SENTRY_DSN,
+
   enableLogs: true,
   
   integrations: [
@@ -20,7 +20,7 @@ Sentry.init({
   ],
 
   tracesSampleRate: 1.0,
-  tracePropagationTargets: ["http://localhost:3001"],
+  tracePropagationTargets: [import.meta.env.VITE_API_BASE_URL],
 
   replaysSessionSampleRate: 1.0,
   replaysOnErrorSampleRate: 1.0,

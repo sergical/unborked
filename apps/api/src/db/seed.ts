@@ -159,19 +159,8 @@ const initialFlags = [
 async function seedProducts() {
   console.log('Seeding products...');
 
-  // Duplicate products to create more data
-  const duplicatedProducts = [];
-  for (let i = 0; i < 5; i++) {
-    for (const product of baseProducts) {
-      duplicatedProducts.push({
-        ...product,
-        name: i === 0 ? product.name : `${product.name} ${i + 1}`
-      });
-    }
-  }
-
   const insertedProducts = [];
-  for (const product of duplicatedProducts) {
+  for (const product of baseProducts) {
     console.log(`Creating product: ${product.name}`);
 
     const [newProduct] = await db.insert(products).values({
@@ -197,10 +186,8 @@ async function seedSaleData(insertedProducts: any[]) {
   const productMap = new Map(insertedProducts.map(p => [p.name, p]));
 
   for (const sale of saleMetadata) {
-    // Find all products matching this base name (including duplicates)
-    const matchingProducts = insertedProducts.filter(p =>
-      p.name === sale.name || p.name.startsWith(`${sale.name} `)
-    );
+    // Find products matching this base name
+    const matchingProducts = insertedProducts.filter(p => p.name === sale.name);
 
     for (const product of matchingProducts) {
       console.log(`Adding sale data for: ${product.name}`);

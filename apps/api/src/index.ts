@@ -18,7 +18,7 @@ const PORT = 3001;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:4173';
 
 const corsOptions = {
-  origin: ['http://localhost:4173'],
+  origin: [FRONTEND_URL],
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
     'Content-Type',

@@ -1,3 +1,9 @@
 .turbo
 node_modules
-BLOG.md
+
+# Environment variables
+.env
+.env*.local
+.env.development
+.env.production
+!.env.example

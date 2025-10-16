@@ -10,6 +10,7 @@
     "check-types": "turbo check-types",
     "playwright:install": "turbo playwright:install",
     "test:checkout": "turbo test:checkout",
+    "db:new": "turbo db:new",
     "db:generate": "turbo db:generate",
     "migrate": "turbo migrate",
     "seed": "turbo seed",
