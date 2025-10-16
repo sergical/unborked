@@ -1,12 +1,9 @@
-import * as Sentry from "@sentry/react";
 import { ShoppingCart } from "lucide-react";
 import type React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import type { Product } from "../types";
-
-const { info, fmt } = Sentry.logger;
 
 interface ProductCardProps {
 	product: Product;
@@ -21,18 +18,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 		e.stopPropagation();
 
 		if (user) {
-			info(
-				fmt`User '${user.username}' added item '${product.name}' (ID: ${product.id}) to cart.`,
-			);
+			console.log(`User '${user.username}' added item '${product.name}' (ID: ${product.id}) to cart.`);
 		} else {
-			info(
-				fmt`Guest added item '${product.name}' (ID: ${product.id}) to cart.`,
-			);
+			console.log(`Guest added item '${product.name}' (ID: ${product.id}) to cart.`);
 		}
 
-		info(
-			fmt`Adding product ID: ${product.id} (Name: ${product.name}) to cart from ProductCard`,
-		);
+		console.log(`Adding product ID: ${product.id} (Name: ${product.name}) to cart from ProductCard`);
 		dispatch({
 			type: "ADD_ITEM",
 			payload: { ...product, quantity: 1 },

@@ -53,11 +53,11 @@
     },
     "db:generate": {
       "cache": false
-    },
-    "migrate": {
+    },  
+    "db:migrate": {
       "cache": false
     },
-    "seed": {
+    "db:seed": {
       "cache": false
     },
     "studio": {

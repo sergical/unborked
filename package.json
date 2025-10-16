@@ -12,8 +12,8 @@
     "test:checkout": "turbo test:checkout",
     "db:new": "turbo db:new",
     "db:generate": "turbo db:generate",
-    "migrate": "turbo migrate",
-    "seed": "turbo seed",
+    "db:migrate": "turbo db:migrate",
+    "db:seed": "turbo db:seed",
     "studio": "turbo studio",
     "traffic": "turbo traffic"
   },

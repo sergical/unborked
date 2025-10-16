@@ -1,14 +1,8 @@
-import './instrument';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import routes from './routes';
-import * as Sentry from '@sentry/node';
 import { Request, Response, NextFunction } from 'express';
-import flagsRouter from './routes/flags';
-
-// Import Sentry logger functions
-const { debug, info, error, fmt } = Sentry.logger;
 
 dotenv.config();
 
@@ -34,19 +28,15 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 app.use((req: Request, res: Response, next: NextFunction) => {
-  info(fmt`${req.method} ${req.url} - Request received`);
-  debug(fmt`Request headers: ${JSON.stringify(req.headers)}`);
+  console.log(`${req.method} ${req.url} - Request received`);
   next();
 });
 
 // Routes
 app.use('/api', routes);
-app.use('/api/flags', flagsRouter);
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  error(fmt`Unhandled error occurred: ${err.message}`, { stack: err.stack });
-
-  Sentry.captureException(err);
+  console.error('Unhandled error occurred:', err.message, err.stack);
   
   res.status(500).json({ 
     error: 'Something broke!',
@@ -57,19 +47,16 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 const startServer = async () => {
   try {
     console.log('🚀 Starting server...');
-    info('🚀 Starting server...');
 
     // Start server
     console.log('About to call app.listen on port', PORT);
     app.listen(PORT, () => {
       console.log('✅ Server is running on port', PORT);
-      info(fmt`✅ Server is running on port ${PORT}`);
-      info(fmt`🔗 Allowed frontend origin: ${FRONTEND_URL}`);
+      console.log(`🔗 Allowed frontend origin: ${FRONTEND_URL}`);
     });
 
   } catch (startupError: any) {
-    error(fmt`❌ Failed to start server: ${startupError.message}`, { stack: startupError.stack });
-    Sentry.captureException(startupError);
+    console.error('❌ Failed to start server:', startupError.message, startupError.stack);
     process.exit(1);
   }
 };

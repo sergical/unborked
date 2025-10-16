@@ -1,6 +1,3 @@
-import * as Sentry from '@sentry/react';
-
-const { logger } = Sentry;
 
 export interface PaymentDetails {
   cardNumber: string;
@@ -31,7 +28,7 @@ export interface PaymentContext {
  */
 export async function GetPaymentDetails(context: PaymentContext): Promise<PaymentDetails | null> {
   try {
-    logger.info(`Fetching payment details for user: ${context.username}`);
+    console.log(`Fetching payment details for user: ${context.username}`);
     
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
     const VAULT_API_KEY = import.meta.env.VITE_PAYMENT_VAULT_API_KEY;
@@ -56,24 +53,24 @@ export async function GetPaymentDetails(context: PaymentContext): Promise<Paymen
     });
 
     if (!response.ok) {
-      logger.warn(`Payment vault returned ${response.status}: ${response.statusText}`);
+      console.warn(`Payment vault returned ${response.status}: ${response.statusText}`);
       return null;
     }
 
     const vaultData = await response.json();
     
     if (vaultData.success && vaultData.encryptedPaymentData) {
-      logger.info('Decrypting stored payment method');
+      console.log('Decrypting stored payment method');
       
       try {
         const encryptedData = vaultData.encryptedPaymentData;
         
         if (!encryptedData) {
-          logger.warn('No encrypted payment data found in vault response');
+          console.warn('No encrypted payment data found in vault response');
           return null;
         }
         
-        logger.info(`Decrypting card data with keyId: ${encryptedData.keyId}`);
+        console.log(`Decrypting card data with keyId: ${encryptedData.keyId}`);
         
         const decryptionResponse = await fetch(`${API_BASE_URL}/api/payment-vault/decrypt`, {
           method: 'POST',
@@ -106,33 +103,20 @@ export async function GetPaymentDetails(context: PaymentContext): Promise<Paymen
           cardholderName: decryptionResult.decryptedPayment.card_holder_name
         };
         
-        logger.info('Payment method decrypted successfully');
+        console.log('Payment method decrypted successfully');
         return decryptedPayment;
         
       } catch (decryptionError) {
-        logger.error('Failed to decrypt payment method', { error: decryptionError as Error });
-        
-        Sentry.withScope((scope) => {
-          scope.setTag('service', 'payment-vault');
-          scope.setTag('operation', 'decrypt-payment-methods');
-          scope.setContext('user_context', {
-            userId: context.userId,
-            username: context.username,
-            transactionAmount: context.total
-          });
-          Sentry.captureException(decryptionError);
-        });
-        
+        console.error('Failed to decrypt payment method', decryptionError);
         return null;
       }
     }
     
-    logger.warn('Invalid vault response format');
+    console.warn('Invalid vault response format');
     return null;
     
   } catch (error) {
-    logger.error('Failed to retrieve payment details', { error: error as Error });
-    Sentry.captureException(error);
+    console.error('Failed to retrieve payment details', error);
     return null;
   }
 }

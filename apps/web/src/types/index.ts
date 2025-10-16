@@ -11,11 +11,6 @@ export interface CartItem extends Product {
   quantity: number;
 }
 
-export interface FeatureFlags {
-  cryptoPayment: boolean;
-  classicCash: boolean;
-}
-
 export interface User {
   id: number;
   username: string;

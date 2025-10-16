@@ -1,80 +1,38 @@
-# Playwright E2E Tests for Unborked
+# Playwright Tests for Workshop
 
-This directory contains end-to-end tests using Playwright for testing the Unborked e-commerce application.
+This directory contains a Playwright test used during the workshop.
 
-## Checkout Stress Test
+## Generate Traffic Test
 
-The checkout stress test (`checkout-stress.spec.ts`) simulates 500 checkout flows with random cart items to test the stability and performance of the checkout system.
+The traffic generation test (`generate-traffic.spec.ts`) simulates concurrent users accessing the sale page to demonstrate the N+1 query problem in Module 3.
 
-### Configuration
-
-You can configure the test parameters in the test file:
-
-```typescript
-// Configurable test parameters
-const TEST_RUNS = 500;          // Number of test runs
-const MAX_ITEMS_PER_RUN = 5;    // Maximum items per cart
-const MIN_ITEMS_PER_RUN = 1;    // Minimum items per cart
-```
-
-### Running the Tests
-
-You can run the tests using the following commands:
+### Running the Test
 
 ```bash
-# Run the checkout stress test
-pnpm test:checkout
-
-# Generate traffic to the sale page
+# Generate traffic to the sale page (used in Module 3)
 pnpm traffic
-
-# Run all playwright tests
-npx playwright test
-
-# Run specific test file
-npx playwright test checkout-stress.spec.ts
-
-# Run with UI mode
-npx playwright test --ui
-
-# Show the test report
-npx playwright show-report
 ```
 
-### Test Results
+This will run 10 test batches in parallel, each making 10 requests to the `/sale` page, for a total of 100 concurrent requests.
 
-Test results are stored in two locations:
+### What It Does
 
-1. **Playwright Report**: Playwright generates an HTML report in the `playwright-report` directory. View it with `npm run report`.
+1. Navigates to `/sale` page
+2. Waits for the page to load completely (networkidle)
+3. Repeats 10 times per batch
+4. Runs 10 batches in parallel
 
-2. **Test Results JSON**: Detailed test data is stored in the `test-results` directory as JSON files. Each file contains:
-   - Summary statistics (success rate, average duration, etc.)
-   - Detailed data for each test run
+This load test is used in **Module 3** of the workshop to:
+
+- Demonstrate the N+1 query problem under load
+- Show slow API response times (p95 ~2500ms)
+- Visualize the "comb" pattern in Sentry's distributed tracing
+- Prove the performance improvement after optimization (2500ms → 50ms)
 
 ### Troubleshooting
 
-If the tests fail, check the following:
+If the test fails:
 
-1. Make sure the application is running (`npm run dev`)
-2. Check that the selectors in the test match your current UI
-3. Verify that your app has products available to add to cart
-4. Look at the failure screenshots in the `test-results` directory
-
-## Modifying Selectors
-
-If your UI components have different class names or text, update the selectors in the test file:
-
-```typescript
-// Example selectors that might need adjustment
-await page.locator('.product-card').all();
-await page.locator('.product-title').textContent();
-await page.locator('button:has-text("Add to Cart")').click();
-await page.locator('a[href="/cart"]').click();
-await page.locator('.cart-item').count();
-await page.locator('button:has-text("Checkout")').click();
-await page.locator('text=Thank you for your order').toBeVisible();
-```
-
-## Adding More Tests
-
-To add more tests, create new `.spec.ts` files in this directory and follow the Playwright testing patterns. 
+1. Make sure the application is running (`pnpm dev`)
+2. Ensure the backend is running (`pnpm dev` in the api directory)
+3. Verify the database has products with sale data (`pnpm seed`)

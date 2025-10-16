@@ -20,25 +20,30 @@ A full-stack e-commerce application built for demonstrating common frontend and 
 ### Installation
 
 1. Install dependencies:
+
 ```bash
 pnpm install
 ```
 
 2. Set up environment variables:
+
    - Copy `.env.example` to `.env` in both `apps/web` and `apps/api`
    - Configure your database URL and Sentry DSN
 
 3. Run database migrations:
+
 ```bash
 pnpm migrate
 ```
 
 4. Seed the database:
+
 ```bash
 pnpm seed
 ```
 
 5. Start development servers:
+
 ```bash
 pnpm dev
 ```
@@ -68,10 +73,9 @@ apps/
 ## Workshop Topics
 
 This application demonstrates:
+
 - N+1 query patterns
 - Slow database queries
 - Frontend performance issues
 - Error tracking with Sentry
 - Feature flag management
-
-See `CLAUDE.md` for detailed project documentation.

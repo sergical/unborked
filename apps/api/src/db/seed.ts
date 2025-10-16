@@ -1,6 +1,6 @@
 import { db } from './index';
 import pool from '../db-config';
-import { products, salePrices, productMetadata, saleCategories, users, purchases, userCarts, flagsTable } from './schema';
+import { products, salePrices, productMetadata, saleCategories, users, purchases, userCarts } from './schema';
 
 const baseProducts = [
   {
@@ -147,15 +147,6 @@ const saleMetadata = [
   { name: 'Memory Leak Detector', salePrice: '179.99', saleCategory: 'Cyber Monday', featured: false, priority: 40 }
 ];
 
-// Initial feature flags
-const initialFlags = [
-  { name: 'STORE_CHECKOUT_ENABLED', defaultValue: true },
-  { name: 'MAIN_STORE', defaultValue: true },
-  { name: 'SITE_RELAUNCH', defaultValue: false },
-  { name: 'BACKEND_V2', defaultValue: true },
-  { name: 'UNBORKED_V2', defaultValue: false }
-];
-
 async function seedProducts() {
   console.log('Seeding products...');
 
@@ -225,7 +216,7 @@ async function seed() {
 
     // Clear all existing data and reset sequences
     console.log('Clearing existing data...');
-    await pool.query('TRUNCATE TABLE user_carts, purchases, product_metadata, sale_prices, products, sale_categories, users, flags RESTART IDENTITY CASCADE');
+    await pool.query('TRUNCATE TABLE user_carts, purchases, product_metadata, sale_prices, products, sale_categories, users RESTART IDENTITY CASCADE');
     console.log('Database cleared.');
 
     // Create sale categories
@@ -250,10 +241,6 @@ async function seed() {
 
     // Then add sale data
     await seedSaleData(insertedProducts);
-
-    // Insert initial flags
-    await db.insert(flagsTable).values(initialFlags);
-    console.log('Initial flags created');
 
     console.log('Database seeding completed successfully!');
   } catch (error) {

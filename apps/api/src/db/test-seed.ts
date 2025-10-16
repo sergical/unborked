@@ -1,4 +1,4 @@
-import { seed } from './seed';
+import seed from './seed';
 import { db } from './index';
 import { users } from './schema';
 

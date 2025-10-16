@@ -1,6 +1,5 @@
 import express, { Request, Response } from 'express';
 import { authenticateToken } from '../middleware/auth';
-import * as Sentry from '@sentry/node';
 
 interface AuthRequest extends Request {
   user?: {
@@ -60,108 +59,78 @@ interface CheckoutPayload {
 }
 
 const router = express.Router();
-const { logger } = Sentry;
 
 router.post('/borkedpay', authenticateToken, async (req: AuthRequest, res: Response) => {
-  return await Sentry.startSpan(
-    {
-      op: 'checkout.process',
-      name: 'Process Checkout Payment',
-      attributes: {
-        endpoint: '/checkout/borkedpay',
-        method: 'POST',
-      }
-    },
-    async (span) => {
-      try {
-        if (!req.user) {
-          span?.setAttributes({ 'error': true, 'error.type': 'unauthorized' });
-          return res.status(401).json({ error: 'User not authenticated' });
-        }
-
-        const { items, total, paymentMethod, paymentDetails, billingAddress, shippingAddress } = req.body || {};
-        if (!Array.isArray(items) || !total) {
-          span?.setAttributes({ 'error': true, 'error.type': 'validation_failed' });
-          return res.status(400).json({ error: 'Invalid checkout payload' });
-        }
-
-        logger.info(logger.fmt`Processing payment for user ${req.user.username}, amount: ${total}`);
-        
-       
-        await new Promise((r) => setTimeout(r, Math.random() * 500 + 200));
-
-        logger.info('Starting checkout payload validation');
-        validateCheckoutPayload({ items, total, paymentMethod, paymentDetails, billingAddress, shippingAddress });
-        logger.info('Checkout payload validation completed successfully');
-
-        const paymentRequest = {
-          amount: total,
-          currency: 'USD',
-          customer_id: req.user.userId,
-          payment_method: paymentMethod || 'card',
-          items: items.map(item => ({ id: item.id, quantity: item.quantity })),
-          billing_address: billingAddress,
-          shipping_address: shippingAddress
-        };
-
-        const gatewayConfig = {
-          endpoint: 'https://api-test.paymentgateway.com/v1/charges',
-          api_key: process.env.PAYMENT_GATEWAY_TEST_KEY, 
-          test_mode: true 
-        };
-
-        let paymentResult;
-        try {
-          paymentResult = await processPayment(paymentRequest, gatewayConfig);
-        } catch (networkError: unknown) {
-          if ((networkError as { code?: string }).code === 'ECONNREFUSED') {
-            span?.setAttributes({ 'error': true, 'error.type': 'gateway_unreachable' });
-            return res.status(503).json({ error: 'Payment service temporarily unavailable' });
-          }
-          throw networkError;
-        }
-
-        if (paymentResult.status !== 'approved') {
-          const errorCode = paymentResult.decline_code || 'card_declined';
-          const errorMessage = getPaymentErrorMessage(errorCode);
-          
-          span?.setAttributes({ 
-            'error': true, 
-            'error.type': 'payment_declined', 
-            'payment.decline_code': errorCode 
-          });
-          
-          logger.warn(logger.fmt`Payment declined for user ${req.user.username}: ${errorCode}`);
-          
-          return res.status(402).json({ 
-            error: errorMessage, 
-            code: errorCode,
-            retry_allowed: isRetryableError(errorCode)
-          });
-        }
-
-        return res.json({ 
-          success: true, 
-          transaction_id: paymentResult.transaction_id,
-          receipt_url: paymentResult.receipt_url 
-        });
-
-      } catch (err: unknown) {
-        const errorMessage = (err as Error)?.message || 'Unknown error';
-        logger.error(logger.fmt`Checkout error caught: ${errorMessage}`, { stack: (err as Error)?.stack });
-        span?.setAttributes({ 'error': true, 'error.message': errorMessage });
-        
-        Sentry.withScope((scope) => {
-          scope.setTag('endpoint', 'checkout');
-          scope.setTag('user_id', req.user?.userId);
-          scope.setLevel('error');
-          Sentry.captureException(err);
-        });
-        
-        return res.status(500).json({ error: errorMessage });
-      }
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
     }
-  );
+
+    const { items, total, paymentMethod, paymentDetails, billingAddress, shippingAddress } = req.body || {};
+    if (!Array.isArray(items) || !total) {
+      return res.status(400).json({ error: 'Invalid checkout payload' });
+    }
+
+    console.log(`Processing payment for user ${req.user.username}, amount: ${total}`);
+    
+    // Simulate network latency
+    await new Promise((r) => setTimeout(r, Math.random() * 500 + 200));
+
+    console.log('Starting checkout payload validation');
+    validateCheckoutPayload({ items, total, paymentMethod, paymentDetails, billingAddress, shippingAddress });
+    console.log('Checkout payload validation completed successfully');
+
+    const paymentRequest = {
+      amount: total,
+      currency: 'USD',
+      customer_id: req.user.userId,
+      payment_method: paymentMethod || 'card',
+      items: items.map(item => ({ id: item.id, quantity: item.quantity })),
+      billing_address: billingAddress,
+      shipping_address: shippingAddress
+    };
+
+    const gatewayConfig = {
+      endpoint: 'https://api-test.paymentgateway.com/v1/charges',
+      api_key: process.env.PAYMENT_GATEWAY_TEST_KEY, 
+      test_mode: true 
+    };
+
+    let paymentResult;
+    try {
+      paymentResult = await processPayment(paymentRequest, gatewayConfig);
+    } catch (networkError: unknown) {
+      if ((networkError as { code?: string }).code === 'ECONNREFUSED') {
+        return res.status(503).json({ error: 'Payment service temporarily unavailable' });
+      }
+      throw networkError;
+    }
+
+    if (paymentResult.status !== 'approved') {
+      const errorCode = paymentResult.decline_code || 'card_declined';
+      const errorMessage = getPaymentErrorMessage(errorCode);
+      
+      console.warn(`Payment declined for user ${req.user.username}: ${errorCode}`);
+      
+      return res.status(402).json({ 
+        error: errorMessage, 
+        code: errorCode,
+        retry_allowed: isRetryableError(errorCode)
+      });
+    }
+
+    return res.json({ 
+      success: true, 
+      transaction_id: paymentResult.transaction_id,
+      receipt_url: paymentResult.receipt_url 
+    });
+
+  } catch (err: unknown) {
+    const errorMessage = (err as Error)?.message || 'Unknown error';
+    console.error('Checkout error caught:', errorMessage, (err as Error)?.stack);
+    
+    return res.status(500).json({ error: errorMessage });
+  }
 });
 
 // Mock payment processing function that simulates real gateway behavior
@@ -252,5 +221,3 @@ function validateCheckoutPayload(payload: CheckoutPayload): void {
 }
 
 export default router;
-
-
